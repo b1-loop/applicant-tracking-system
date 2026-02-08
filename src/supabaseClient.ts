@@ -1,12 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+// Vi hårdkodar nycklarna tillfälligt för att se om det löser problemet
+const supabaseUrl = 'https://iesqrsdmwhlwxwwujivp.supabase.co'
+const supabaseAnonKey = 'sb_publishable_Fe_3exREbOy2oY_orYlrwQ_vlknnIFq' // (OBS: Detta är egentligen hemligt, vi tar bort det sen när det funkar)
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('⚠️ Supabase keys are missing! Check your GitHub Secrets.')
-}
-
-// Vi skapar klienten även om nycklarna saknas för att undvika "Uncaught Error",
-// men databas-anrop kommer misslyckas kontrollerat istället för att krascha sidan.
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
