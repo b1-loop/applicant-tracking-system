@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import type { DropResult } from '@hello-pangea/dnd'
-import { translations } from '../translations' // Importera översättningarna
+import { translations } from '../translations'
 
 interface Candidate {
   id: number
@@ -16,17 +16,16 @@ interface Candidate {
   created_at: string
 }
 
+// HÄR VAR FELET: Jag har tagit bort 'role' härifrån
 interface Props {
   job: any
   goBack: () => void
-  role: string
-  lang: 'sv' | 'en' // NYTT: Ta emot språket
+  lang: 'sv' | 'en'
 }
 
-export default function KanbanBoard({ job, goBack, role, lang }: Props) {
-  const t = translations[lang] // Hämta rätt textpaket
+export default function KanbanBoard({ job, goBack, lang }: Props) {
+  const t = translations[lang]
 
-  // Dynamiska kolumner baserat på språk
   const COLUMNS = {
     new: { title: t.col_new, color: 'border-blue-500' },
     interview: { title: t.col_interview, color: 'border-yellow-500' },

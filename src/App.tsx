@@ -260,15 +260,13 @@ function Dashboard({ role, session, lang }: { role: string, session: any, lang: 
   useEffect(() => { fetchJobs(); fetchStats(); if(role === 'admin') fetchCustomers(); }, [role])
 
   async function fetchJobs() { 
-    // HÄMTA ALLA JOBB - FILTRERA SEN I VISNINGEN
     let query = supabase.from('jobs').select('*').order('id', { ascending: false })
     const { data } = await query
     
     if (data) {
         if (role === 'admin') {
-            setJobs(data) // Admin ser allt
+            setJobs(data) 
         } else {
-            // Vanlig kund ser BARA sina egna
             const myJobs = data.filter(job => job.user_id === session.user.id)
             setJobs(myJobs)
         }
@@ -292,7 +290,8 @@ function Dashboard({ role, session, lang }: { role: string, session: any, lang: 
     let jobsQ = supabase.from('jobs').select('id')
     if (role !== 'admin') jobsQ = jobsQ.eq('user_id', session.user.id)
     const { data: userJobs } = await jobsQ
-    const jobIds = userJobs?.map(j => j.id) || []
+    // HÄR VAR FELET: Jag har lagt till "as any[]" för att tvinga TypeScript att förstå att det är en lista
+    const jobIds = (userJobs as any[])?.map(j => j.id) || []
     
     if (jobIds.length > 0) {
         const { count: candCount } = await supabase.from('candidates').select('*', { count: 'exact', head: true }).in('job_id', jobIds)
@@ -311,10 +310,9 @@ function Dashboard({ role, session, lang }: { role: string, session: any, lang: 
   }
   async function openProfile() { const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single(); if (data) { setProfName(data.full_name || ''); setProfCompany(data.company_name || ''); setProfPhone(data.phone || ''); } setShowProfileModal(true) }
   
-async function createJob(e: React.FormEvent) { 
+  async function createJob(e: React.FormEvent) { 
       e.preventDefault(); setIsCreating(true); 
       const { data: { user } } = await supabase.auth.getUser(); 
-      
       if (user) { 
           const { error } = await supabase.from('jobs').insert([{ 
               title: newJobTitle, 
@@ -327,10 +325,9 @@ async function createJob(e: React.FormEvent) {
               user_id: user.id, 
               status: 'active' 
           }]); 
-
+          
           if (!error) {
-              setNewJobTitle(''); setNewJobDesc(''); setNewRequirements(''); 
-              setNewSalary(''); setNewStartDate(''); setNewLocation(''); setNewWorkMode('onsite'); 
+              setNewJobTitle(''); setNewJobDesc(''); setNewRequirements(''); setNewSalary(''); setNewStartDate(''); setNewLocation(''); setNewWorkMode('onsite'); 
               fetchJobs(); fetchStats(); setShowCreateModal(false) 
           } else {
               alert('Kunde inte skapa annons: ' + error.message);
@@ -338,18 +335,12 @@ async function createJob(e: React.FormEvent) {
       }; 
       setIsCreating(false) 
   }
+  
   async function toggleJobStatus(job: any) { 
       const newStatus = job.status === 'active' ? 'closed' : 'active'; 
       setJobs(prevJobs => prevJobs.map(j => j.id === job.id ? { ...j, status: newStatus } : j)); 
-      
       const { error } = await supabase.from('jobs').update({ status: newStatus }).eq('id', job.id); 
-      
-      if (error) {
-          alert("Kunde inte ändra status. Du kanske inte har behörighet.");
-          fetchJobs();
-      } else {
-          fetchStats();
-      }
+      if (error) { alert("Kunde inte ändra status. Du kanske inte har behörighet."); fetchJobs(); } else { fetchStats(); }
   }
   
   async function deleteJob(jobId: number, e: React.MouseEvent) { e.stopPropagation(); if (!confirm(t.deleteJobConfirm)) return; await supabase.from('candidates').delete().eq('job_id', jobId); const { error } = await supabase.from('jobs').delete().eq('id', jobId); if (!error) { fetchJobs(); fetchStats(); } }
@@ -421,11 +412,11 @@ async function createJob(e: React.FormEvent) {
         <Navbar />
         {showTutorial && <TutorialWizard />}
         <main className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 space-y-12">
+          {/* STATS */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white p-6 rounded-[24px] shadow-xl shadow-slate-100 border border-slate-100 flex items-center justify-between"><div><p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{t.statActive}</p><p className="text-4xl font-black text-slate-900">{stats.active}</p></div><div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl">💼</div></div>
               <div className="bg-white p-6 rounded-[24px] shadow-xl shadow-slate-100 border border-slate-100 flex items-center justify-between"><div><p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{t.statTotal}</p><p className="text-4xl font-black text-slate-900">{stats.totalCands}</p></div><div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center text-xl">👥</div></div>
               <div className="bg-white p-6 rounded-[24px] shadow-xl shadow-slate-100 border border-slate-100 flex items-center justify-between"><div><p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{t.statNew}</p><p className="text-4xl font-black text-slate-900">{stats.newCands}</p></div><div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-xl">🔥</div></div>
-              
               <div className="bg-white p-6 rounded-[24px] shadow-xl shadow-slate-100 border border-slate-100 flex items-center justify-between"><div><p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{t.statInterview}</p><p className="text-4xl font-black text-slate-900">{stats.interview}</p></div><div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center text-xl">🗣️</div></div>
               <div className="bg-white p-6 rounded-[24px] shadow-xl shadow-slate-100 border border-slate-100 flex items-center justify-between"><div><p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{t.statOffer}</p><p className="text-4xl font-black text-slate-900">{stats.offer}</p></div><div className="w-12 h-12 bg-fuchsia-50 text-fuchsia-600 rounded-2xl flex items-center justify-center text-xl">📝</div></div>
               <div className="bg-white p-6 rounded-[24px] shadow-xl shadow-slate-100 border border-slate-100 flex items-center justify-between"><div><p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{t.statHired}</p><p className="text-4xl font-black text-slate-900">{stats.hired}</p></div><div className="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center text-xl">✅</div></div>
@@ -445,7 +436,10 @@ async function createJob(e: React.FormEvent) {
                    {job.salary_range && <span className="text-[10px] font-bold uppercase tracking-wide bg-green-50 text-green-600 px-3 py-1.5 rounded-lg">💰 {job.salary_range}</span>}
                    {job.start_date && <span className="text-[10px] font-bold uppercase tracking-wide bg-purple-50 text-purple-600 px-3 py-1.5 rounded-lg">📅 {job.start_date}</span>}
                 </div>
-                <p className="text-slate-400 font-medium line-clamp-3 mb-8 flex-1 leading-relaxed">{job.description}</p>
+                {/* HÄR VISAS FÖRHANDSGRANSKNING AV JOBB-TEXTEN (STRIPPAD HTML FÖR ATT SLIPPA TAGGAR I KORTET) */}
+                <p className="text-slate-400 font-medium line-clamp-3 mb-8 flex-1 leading-relaxed">
+                    {job.description.replace(/<[^>]*>?/gm, '')}
+                </p>
                 <div className="flex items-center justify-between mt-auto pt-6 border-t border-slate-50">
                   <div className="flex gap-2">
                       <button onClick={(e) => { e.stopPropagation(); toggleJobStatus(job) }} className={`text-[10px] font-bold uppercase px-3 py-1.5 rounded-lg border transition ${job.status === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>{job.status === 'active' ? t.statusActive : t.statusClosed}</button>
@@ -472,8 +466,19 @@ async function createJob(e: React.FormEvent) {
                        <div><label className="block text-xs font-black text-slate-400 uppercase tracking-wide mb-1">{t.salaryLabel}</label><input className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-indigo-500 outline-none font-semibold transition-all" value={newSalary} onChange={e => setNewSalary(e.target.value)} placeholder={t.phSalary} /></div>
                        <div><label className="block text-xs font-black text-slate-400 uppercase tracking-wide mb-1">{t.startLabel}</label><input type="date" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-indigo-500 outline-none font-semibold transition-all" value={newStartDate} onChange={e => setNewStartDate(e.target.value)} /></div>
                     </div>
-                    <div><label className="block text-xs font-black text-slate-400 uppercase tracking-wide mb-1">{t.jobDescLabel}</label><textarea className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-indigo-500 font-bold h-32 resize-none" value={newJobDesc} onChange={e => setNewJobDesc(e.target.value)} placeholder={t.phDesc} /></div>
-                    <div><label className="block text-xs font-black text-slate-500 uppercase tracking-wide mb-1">{t.jobReqLabel}</label><textarea className="w-full p-4 bg-amber-50/50 border border-amber-100 rounded-2xl focus:bg-white focus:border-amber-300 outline-none font-semibold transition-all h-24 resize-none" value={newRequirements} onChange={e => setNewRequirements(e.target.value)} placeholder={t.phReq} /></div>
+                    
+                    {/* RICH TEXT EDITOR: BESKRIVNING */}
+                    <div>
+                        <label className="block text-xs font-black text-slate-400 uppercase tracking-wide mb-1">{t.jobDescLabel}</label>
+                        <textarea className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-indigo-500 font-bold h-32 resize-none" value={newJobDesc} onChange={e => setNewJobDesc(e.target.value)} placeholder={t.phDesc} />
+                    </div>
+
+                    {/* RICH TEXT EDITOR: KRAV */}
+                    <div>
+                        <label className="block text-xs font-black text-slate-500 uppercase tracking-wide mb-1">{t.jobReqLabel}</label>
+                        <textarea className="w-full p-4 bg-amber-50/50 border border-amber-100 rounded-2xl focus:bg-white focus:border-amber-300 outline-none font-semibold transition-all h-24 resize-none" value={newRequirements} onChange={e => setNewRequirements(e.target.value)} placeholder={t.phReq} />
+                    </div>
+
                   </form>
                 </div>
                 <div className="p-8 border-t border-slate-50 bg-slate-50/50 flex gap-4"><button onClick={() => setShowCreateModal(false)} className="flex-1 p-4 text-slate-400 font-black uppercase text-xs tracking-widest hover:text-slate-900 transition-colors">{t.cancel}</button><button form="createJobForm" disabled={isCreating} className="flex-[2] bg-indigo-600 text-white p-4 rounded-2xl font-black text-lg hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100">{isCreating ? t.creating : t.save}</button></div>
@@ -498,5 +503,5 @@ async function createJob(e: React.FormEvent) {
       </div>
     )
   }
-  return <div className="min-h-screen bg-[#fcfcfd] flex flex-col"><div className="flex-1 overflow-hidden"><KanbanBoard job={selectedJob} goBack={() => setView('dashboard')} role={role} lang={lang} /></div></div>
+  return <div className="min-h-screen bg-[#fcfcfd] flex flex-col"><div className="flex-1 overflow-hidden"><KanbanBoard job={selectedJob} goBack={() => setView('dashboard')} lang={lang} /></div></div>
 }
