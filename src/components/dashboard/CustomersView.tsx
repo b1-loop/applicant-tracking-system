@@ -1,4 +1,4 @@
-import React from 'react'
+
 import { translations } from '../../translations'
 
 interface Props {
